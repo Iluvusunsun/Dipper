@@ -433,9 +433,9 @@ local FOV = 150
 local HitPart = "Head"
 local SavedFriends = {}
 
-local NORMAL_PREDICTION = 0.10
-local HIGH_VELOCITY_PREDICTION = 0.3
-local VELOCITY_THRESHOLD = 150
+local NORMAL_PREDICTION = 0.12
+local HIGH_VELOCITY_PREDICTION = 0.6
+local VELOCITY_THRESHOLD = 250
 
 local GunNames = {
     "P226","MP5","M24","Draco","Glock","Sawnoff","Uzi","G3","C9",
@@ -939,44 +939,92 @@ end)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-local walkSpeedEnabled = false
-local speedValue = 0.5
-local moveConnection = nil
+local player = Players.LocalPlayer
 
-local function setupWalkSpeed(char)
-    if moveConnection then pcall(function() moveConnection:Disconnect() end) end
-    if not char then return end
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    local humanoid = char:FindFirstChild("Humanoid")
-    if not hrp or not humanoid then return end
-    moveConnection = RunService.Heartbeat:Connect(function(dt)
-        if walkSpeedEnabled and char and hrp and humanoid and humanoid.Health > 0 then
-            if humanoid.MoveDirection.Magnitude > 0 then
-                hrp.CFrame = hrp.CFrame + (humanoid.MoveDirection.Unit * speedValue)
-            end
-        end
-    end)
+local defaultJumpPower = 20
+local maxJumpPower = 100
+local highJumpPower = 60
+local walkSpeedMultiplier = 0.10
+local highJumpActive = false
+local speedActive = false
+
+local function setJumpPower(power)
+    local char = player.Character or player.CharacterAdded:Wait()
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.UseJumpPower = true
+        hum.JumpPower = math.clamp(power, 0, maxJumpPower)
+    end
 end
-LocalPlayer.CharacterAdded:Connect(function(char) task.wait(0.5) setupWalkSpeed(char) end)
-if LocalPlayer.Character then setupWalkSpeed(LocalPlayer.Character) end
+
+local function setupCharacter(char)
+    local hum = char:WaitForChild("Humanoid")
+    hum.AutoJumpEnabled = false  
+
+    if highJumpActive then
+        hum.UseJumpPower = true
+        hum.JumpPower = highJumpPower
+    else
+        hum.JumpPower = defaultJumpPower
+    end
+end
+
+player.CharacterAdded:Connect(setupCharacter)
+
+if player.Character then
+    setupCharacter(player.Character)
+end
 
 
--- Jumppower  local
+MainTab:Toggle({
+    Title = "High Jump",
+    Default = false,
+    Callback = function(state)
+        highJumpActive = state
+        if state then
+            setJumpPower(highJumpPower)
+        else
+            setJumpPower(defaultJumpPower)
+        end
+    end
+})
+
+-- ปรับดโดสุง
+MainTab:Slider({
+    Title = "High Jump Power",
+    Value = {Min = 20, Max = maxJumpPower, Default = highJumpPower},
+    Step = 1,
+    Callback = function(value)
+        highJumpPower = tonumber(value)
+        if highJumpActive then
+            setJumpPower(highJumpPower)
+        end
+    end
+})
+
+-- ปุ่มวิ่งไว
+MainTab:Toggle({
+    Title = "Walk Speed",
+    Default = false,
+    Callback = function(state)
+        speedActive = state
+    end
+})
+
+-- ปรับวิ่งวไ
+MainTab:Slider({
+    Title = "Speed Multiplier",
+    Value = {Min = 1, Max = 5, Default = walkSpeedMultiplier},
+    Step = 1,
+    Callback = function(value)
+        walkSpeedMultiplier = tonumber(value)
+    end
+})
 
 
-local UserInputService = game:GetService("UserInputService")
-
-local jumpEnabled = false
-local jumpPower = 70
-local jumpConnection = nil
 
 
-
-
-
-
--- Farm ถูพื้นกากๆ
+-- Farm ถูพื้นกากๆ ค่อยแก้
 
 
 
@@ -1314,7 +1362,7 @@ local CombatTab = Window:Tab({Title = "COMBAT", Icon = "swords"})
 
 
 CombatTab:Toggle({
-    Title = "Silent Aim | Wallbang",
+    Title = "Silent Aim",
     Default = SilentAimEnabled,
     Callback = function(v)
         SilentAimEnabled = v
@@ -1447,64 +1495,13 @@ local ItemsESPToggle = EspTab:Toggle({
 
 
 
-local ChaterTab = Window:Tab({Title = "Character", Icon = "user"})
-
-ChaterTab:Divider()
-
-ChaterTab:Section({Title = "Body"})
-
-ChaterTab:Toggle({
-    Title = "walk speed", 
-    Default = false, 
-    Callback = function(state) 
-        walkSpeedEnabled = state 
-    end
-})
-
-ChaterTab:Slider({
-    Title = "speed", 
-    Step = 0.1, 
-    Value = {Min = 0.1, Max = 1, Default = 0.5}, 
-    Callback = function(v) 
-        speedValue = v 
-    end
-})
-
-
-ChaterTab:Toggle({
-    Title = "jump power", 
-    Default = false, 
-    Callback = function(state)
-        jumpEnabled = state
-        if jumpConnection then jumpConnection:Disconnect() jumpConnection = nil end
-        if state then
-            jumpConnection = UserInputService.JumpRequest:Connect(function()
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                    char.HumanoidRootPart.Velocity = Vector3.new(char.HumanoidRootPart.Velocity.X, jumpPower, char.HumanoidRootPart.Velocity.Z)
-                end
-            end)
-        end
-    end
-})
-
-ChaterTab:Slider({
-    Title = "jump valu", 
-    Step = 5, 
-    Value = {Min = 20, Max = 150, Default = 70}, 
-    Callback = function(v) 
-        jumpPower = v 
-    end
-})
-
+local MainTab = Window:Tab({Title = "Character", Icon = "user"})
 
 local EnabledInfiniteStamina = false
 ChaterTab:Toggle(
     {
         Title = "Infinite Stamina",
         Flag = "Inf",
-        Type = "Checkbox",
         Value = false,
         Callback = function(Value)
             EnabledInfiniteStamina = Value
@@ -1609,13 +1606,110 @@ end)
 FarmTab:Divider()
 
 FarmTab:Toggle({
-    Title = "Auto Farm Janitor 🪣🧹",
+    Title = "Auto Farm Janitor 🧹",
     Desc = "",
     Default = false,
     Callback = function(state)
         JanitorSettings.Enabled = state
         if state then
             task.spawn(startAutoFarm)
+        end
+    end
+})
+
+_G.AntiLock = false
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local CharModule = require(ReplicatedStorage.Modules.Core.Char)
+
+local AntiAimAnimTrack = nil
+local ANIM_ID = "rbxassetid://104767795538635"
+
+local function playDanceAntiAim()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoid = char:WaitForChild("Humanoid")
+
+    if AntiAimAnimTrack then
+        AntiAimAnimTrack:Stop()
+        AntiAimAnimTrack:Destroy()
+        AntiAimAnimTrack = nil
+    end
+
+    local anim = Instance.new("Animation")
+    anim.AnimationId = ANIM_ID
+
+    AntiAimAnimTrack = humanoid:LoadAnimation(anim)
+    AntiAimAnimTrack.Looped = true
+    AntiAimAnimTrack:Play()
+    AntiAimAnimTrack:AdjustSpeed(3)
+end
+
+local function stopDanceAntiAim()
+    if AntiAimAnimTrack then
+        AntiAimAnimTrack:Stop()
+        AntiAimAnimTrack:Destroy()
+        AntiAimAnimTrack = nil
+    end
+end
+
+local function SpinCharacter()
+    local hrp = CharModule.get_hrp()
+    if not hrp then return end
+    hrp.AssemblyAngularVelocity = Vector3.new(0, 50, 0)
+end
+
+local function VelocityDesync()
+    local hrp = CharModule.get_hrp()
+    if not hrp then return end
+
+    local oldVel = hrp.AssemblyLinearVelocity
+
+    local randomVec = Vector3.new(
+        math.random(-60, 60),
+        math.random(-5, 5),
+        math.random(-60, 60)
+    )
+
+    hrp.AssemblyLinearVelocity = randomVec
+    task.wait()
+    hrp.AssemblyLinearVelocity = oldVel
+end
+
+local function SetPhysics()
+    local hrp = CharModule.get_hrp()
+    if hrp then
+        hrp.CustomPhysicalProperties = PhysicalProperties.new(1, 0.3, 0.5)
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    if _G.AntiLock then
+        VelocityDesync()
+        SpinCharacter()
+        SetPhysics()
+    end
+end)
+
+MainTab:Toggle({
+    Title = "Anti Aim",
+    Flag = "antilock",
+    Value = false,
+    Callback = function(Value)
+        _G.AntiLock = Value
+
+        if Value then
+            playDanceAntiAim()
+        else
+            stopDanceAntiAim()
+
+            local hrp = CharModule.get_hrp()
+            if hrp then
+                hrp.AssemblyAngularVelocity = Vector3.zero
+            end
         end
     end
 })
