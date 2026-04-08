@@ -342,8 +342,8 @@ local LocalPlayer = Players.LocalPlayer
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Swift Hub x BlockSpin [NETA] v1.0​",
-	Icon = "rbxassetid://126601065035910",
+    Title = "Dipper Hub | BlockSpin [NETA] v1.0​",
+	Icon = "rbxassetid://124339558110081",
     Author = "kill yenix ^^",
     Folder = "MySuperHub",
     Size = UDim2.fromOffset(700, 540),
@@ -376,7 +376,7 @@ ScreenGui.Parent = game:GetService("CoreGui")
 ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
 ToggleBtn.Position = UDim2.new(0.5, -25, 0, 15) 
 ToggleBtn.BackgroundTransparency = 1
-ToggleBtn.Image = "rbxassetid://126601065035910"
+ToggleBtn.Image = "rbxassetid://124339558110081"
 ToggleBtn.Active = true
 ToggleBtn.Draggable = true
 ToggleBtn.Parent = ScreenGui
@@ -420,8 +420,8 @@ local EspTab = Window:Tab({
     Icon = "eye"
 })
 
-local GunModsTab = Window:Tab({
-    Title = "Gun Mods",
+local FarmTab = Window:Tab({
+    Title = "Farm",
     Icon = "crosshair"
 })
 
@@ -1750,170 +1750,6 @@ EspTab:Toggle({
 	end  
 })
 
--- Services
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
-local LocalPlayer = Players.LocalPlayer
-local GunsFolder = ReplicatedStorage:WaitForChild("Items"):WaitForChild("gun")
-
--- Global Settings
-getgenv().FireRateValue = 1000
-getgenv().AccuracyValue = 1
-getgenv().RecoilValue = 0
-getgenv().Durability = 999999999
-getgenv().AutoValue = true
-getgenv().GunModsAutoApply = false
-getgenv().ReloadValue = 0.1
-
--- Check if a Tool is a gun
-local function isGunTool(tool)
-    if not tool or not tool:IsA("Tool") then return false end
-    return GunsFolder:FindFirstChild(tool.Name) ~= nil or tool.Name:match("Gun") or tool:FindFirstChild("Handle")
-end
-
--- Safely set Attribute
-local function forceSetAttribute(tool, attrName, value)
-    if tool and tool.SetAttribute then
-        pcall(function()
-            tool:SetAttribute(attrName, value)
-        end)
-    end
-end
-
--- Debug Attributes (Optional)
-local function debugPrintAttributes(tool)
-    local attrs = tool:GetAttributes()
-    local keys = {}
-    for k, _ in pairs(attrs) do table.insert(keys, k) end
-    table.sort(keys)
-    -- ตัวอย่างนี้สามารถใช้ดู Attribute ปืน
-    -- print(tool.Name, keys)
-end
-
--- Apply GodGun attributes
-local function applyGodGun(tool)
-    if not tool or not isGunTool(tool) then return end
-
-    pcall(function()
-        tool:SetAttribute("fire_rate", getgenv().FireRateValue)
-        tool:SetAttribute("accuracy", getgenv().AccuracyValue)
-        tool:SetAttribute("Recoil", getgenv().RecoilValue)
-        tool:SetAttribute("Durability", getgenv().Durability)
-        tool:SetAttribute("automatic", getgenv().AutoValue)
-        tool:SetAttribute("ReloadTime", getgenv().ReloadValue)
-    end)
-
-    task.spawn(function()
-        for attempt = 1, 20 do
-            local attrNames = tool:GetAttributes()
-            local keys = {}
-            for k in pairs(attrNames) do table.insert(keys, k) end
-            table.sort(keys)
-
-            if #keys >= 11 then
-                local targetKey = keys[11]
-                for i = 1, 5 do
-                    forceSetAttribute(tool, targetKey, true)
-                    task.wait(0.01)
-                end
-            end
-            task.wait(0.1)
-        end
-    end)
-
-    task.wait(0.5)
-    debugPrintAttributes(tool)
-end
-
--- Heartbeat Auto Apply
-RunService.Heartbeat:Connect(function()
-    if not getgenv().GunModsAutoApply then return end
-    local char = LocalPlayer.Character
-    if not char then return end
-
-    for _, tool in ipairs(char:GetChildren()) do
-        if tool:IsA("Tool") and isGunTool(tool) then
-            pcall(applyGodGun, tool)
-        end
-    end
-end)
-
--- Character Added
-LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(1)
-    repeat
-        task.wait(0.1)
-        for _, tool in ipairs(char:GetChildren()) do
-            if tool:IsA("Tool") and isGunTool(tool) then
-                task.spawn(applyGodGun, tool)
-            end
-        end
-    until not getgenv().GunModsAutoApply
-end)
-
--- Child Added
-LocalPlayer.Character.ChildAdded:Connect(function(child)
-    if child:IsA("Tool") and getgenv().GunModsAutoApply then
-        task.wait(0.2)
-        applyGodGun(child)
-    end
-end)
-
-
-
-GunModsTab:Slider({
-    Title = "Fire Rate",
-    Step = 10,
-    Value = {Min = 100, Max = 3000},
-    Default = getgenv().FireRateValue,
-    Callback = function(v)
-        getgenv().FireRateValue = v
-    end
-})
-
-GunModsTab:Slider({
-    Title = "Accuracy",
-    Step = 0.01,
-    Value = {Min = 0, Max = 1},
-    Default = getgenv().AccuracyValue,
-    Callback = function(v)
-        getgenv().AccuracyValue = v
-    end
-})
-
-GunModsTab:Slider({
-    Title = "Recoil",
-    Step = 0.1,
-    Value = {Min = 0, Max = 10},
-    Default = getgenv().RecoilValue,
-    Callback = function(v)
-        getgenv().RecoilValue = v
-    end
-})
-
-GunModsTab:Slider({
-    Title = "Reload Time",
-    Step = 0.1,
-    Value = {Min = 0.1, Max = 10},
-    Default = getgenv().ReloadValue,
-    Callback = function(v)
-        getgenv().ReloadValue = v
-    end
-})
-
-GunModsTab:Toggle({
-    Title = "Automatic",
-    Value = getgenv().GunModsAutoApply,
-    Callback = function(v)
-        getgenv().AutoValue = v
-        getgenv().GunModsAutoApply = v
-        if v and WindUI then
-            WindUI:Notify({Title = "Success", Duration = 2})
-        end
-    end
-})
 
 local EnabledSkip = false
 
