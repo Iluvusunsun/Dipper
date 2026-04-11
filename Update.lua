@@ -2004,8 +2004,8 @@ end)
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/arthurkaza-real/skjlnrwejklnrjklwe3njklwer/refs/heads/main/jewa.lua"))()
 
 local MainWindow = Library:Window({
-    Name = '<font color="rgb(175, 102, 126)">ather.</font>hub',
-    Logo = "rbxassetid://133425623304338"
+    Name = 'Dipper Hub | BloxFruit [Premium]​',
+    Logo = "rbxassetid://124339558110081"
 })
 
 local MainPage = MainWindow:Page({
